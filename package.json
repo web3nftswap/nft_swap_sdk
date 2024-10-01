@@ -1,0 +1,17 @@
+{
+  "name": "nft_swap_sdk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@polkadot/api": "^13.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4"
+  }
+}
