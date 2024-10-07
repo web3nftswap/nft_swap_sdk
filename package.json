@@ -9,7 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@polkadot/api": "^13.2.1"
+    "@polkadot/api": "^13.2.1",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@types/node": "^22.7.4"
