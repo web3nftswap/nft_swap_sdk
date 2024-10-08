@@ -53,7 +53,7 @@ const nftCreateMint = async () => {
   await api.isReady;
 
   const [alice, bob] = getAccounts(api);
-console.log('alice',alice)
+  console.log('alice', alice)
   // subscribe event
   await api.query.system.events((events) => {
     events.forEach(({ event }) => {
