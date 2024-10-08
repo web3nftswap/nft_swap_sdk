@@ -101,7 +101,7 @@ const nftCreateMint = async () => {
   console.log(`collection ids: ${collectionIds}`);
 
   // 在 NFT 集合 0 中 mint NFT
-  const collectionIdsArray = collectionIds.toString().match(/0x[0-9a-fA-F]+/g);
+  const collectionIdsArray = JSON.parse(JSON.stringify(collectionIds));
   if (collectionIdsArray) {
     console.log("[Call] mintNft");
     tx = api.tx.nftModule.mintNft(
