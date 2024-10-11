@@ -1,59 +1,71 @@
-import { ApiPromise, WsProvider, Keyring } from "@polkadot/api";
-import { Header } from "@polkadot/types/interfaces/runtime/types";
+//import { ApiPromise, WsProvider, Keyring } from "@polkadot/api";
+//import { Header } from "@polkadot/types/interfaces/runtime/types";
+import { transaction } from "./transaction";
+import {
+  initConnection,
+  hexCodeToString,
+  getAccounts,
+  sendAndWait,
+} from "./utils";
 
-const localUrl = "ws://127.0.0.1:9944";
-const remote = "wss://polkadot.api.onfinality.io/public-ws";
+// const localUrl = "ws://127.0.0.1:9944";
+// const remote = "wss://polkadot.api.onfinality.io/public-ws";
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// function delay(ms: number) {
+//   return new Promise((resolve) => setTimeout(resolve, ms));
+// }
 
-function getAccounts(api: ApiPromise) {
-  const keyring = new Keyring({ type: "sr25519" });
-  return [keyring.addFromUri("//Alice"), keyring.addFromUri("//Bob")];
-}
+// const hexCodeToString = (hexCodes: string): string => {
+//   let str = "";
+//   for (let i = 0; i < hexCodes.length; i += 2) {
+//     const hexCode = hexCodes.slice(i, i + 2);
+//     const charCode = parseInt(hexCode, 16);
+//     str += String.fromCharCode(charCode);
+//   }
+//   return str;
+// };
 
-async function sendAndWait(api, tx, signer) {
-  return new Promise((resolve, reject) => {
-    tx.signAndSend(signer, ({ status, events, dispatchError }) => {
-      if (dispatchError) {
-        if (dispatchError.isModule) {
-          const decoded = api.registry.findMetaError(dispatchError.asModule);
-          const { name, docs } = decoded;
-          reject(new Error(`Transaction failed: ${name} - ${docs.join(" ")}`));
-        } else {
-          reject(new Error(`Transaction failed: ${dispatchError.toString()}`));
-        }
-      } else if (status.isInBlock) {
-        console.log(`Transaction included at blockHash ${status.asInBlock}`);
-      } else if (status.isFinalized) {
-        console.log(`Transaction finalized at blockHash ${status.asFinalized}`);
-        resolve(status.asFinalized);
-      }
-    });
-  });
-}
+// const initConnection = async () => {
+//   const wsProvider = new WsProvider(remote);
+//   const api: ApiPromise = await ApiPromise.create({
+//     provider: wsProvider,
+//     types: {},
+//   });
+//   await api.isReady;
+//   return api;
+// };
+
+// function getAccounts(api: ApiPromise) {
+//   const keyring = new Keyring({ type: "sr25519" });
+//   return [keyring.addFromUri("//Alice"), keyring.addFromUri("//Bob")];
+// }
+
+// async function sendAndWait(api, tx, signer) {
+//   return new Promise((resolve, reject) => {
+//     tx.signAndSend(signer, ({ status, events, dispatchError }) => {
+//       if (dispatchError) {
+//         if (dispatchError.isModule) {
+//           const decoded = api.registry.findMetaError(dispatchError.asModule);
+//           const { name, docs } = decoded;
+//           reject(new Error(`Transaction failed: ${name} - ${docs.join(" ")}`));
+//         } else {
+//           reject(new Error(`Transaction failed: ${dispatchError.toString()}`));
+//         }
+//       } else if (status.isInBlock) {
+//         console.log(`Transaction included at blockHash ${status.asInBlock}`);
+//       } else if (status.isFinalized) {
+//         console.log(`Transaction finalized at blockHash ${status.asFinalized}`);
+//         resolve(status.asFinalized);
+//       }
+//     });
+//   });
+// }
 
 const nftCreateMint = async () => {
-  const hexCodeToString = (hexCodes: string): string => {
-    let str = "";
-    for (let i = 0; i < hexCodes.length; i += 2) {
-      const hexCode = hexCodes.slice(i, i + 2);
-      const charCode = parseInt(hexCode, 16);
-      str += String.fromCharCode(charCode);
-    }
-    return str;
-  };
-
-  const wsProvider = new WsProvider(localUrl);
-  const api: ApiPromise = await ApiPromise.create({
-    provider: wsProvider,
-    types: {},
-  });
-  await api.isReady;
+  const api = await initConnection();
 
   const [alice, bob] = getAccounts(api);
-  console.log('alice', alice)
+  console.log("alice", alice);
   // subscribe event
   await api.query.system.events((events) => {
     events.forEach(({ event }) => {
@@ -181,13 +193,7 @@ const consolidate = async () => {
     }
   };
 
-  const wsProvider = new WsProvider(localUrl);
-  const api: ApiPromise = await ApiPromise.create({
-    provider: wsProvider,
-    types: {},
-  });
-  await api.isReady;
-
+  const api = await initConnection();
   const [alice, bob] = getAccounts(api);
 
   // subscribe event
@@ -255,9 +261,42 @@ const consolidate = async () => {
   }
 };
 
+const getAllNfts = async () => {
+  const api = await initConnection();
+
+  // 获取所有的集合
+  const collectionIds = await api.query.nftModule.nftCollectionIds();
+  console.log(`collection ids: ${collectionIds}`);
+  const collectionIdsArray = JSON.parse(JSON.stringify(collectionIds));
+  for (let i = 0; i < collectionIdsArray.length; ++i) {
+    // 获取每一个集合的信息
+    const collectionInfo = await api.query.nftModule.nftCollections(
+      collectionIdsArray[i]
+    );
+    const [maxItem, curIndex, metainfo] = JSON.parse(
+      JSON.stringify(collectionInfo)
+    );
+    console.log(
+      `maxItem: ${maxItem}, curIndex: ${curIndex}, metainfo: ${hexCodeToString(
+        metainfo
+      )}`
+    );
+    for (let j = 0; j < curIndex; ++j) {
+      // 获取集合中每个nft的拥有者
+      let owners = await api.query.nftModule.nftOwners([
+        collectionIdsArray[i],
+        j,
+      ]);
+      console.log(`nft ${j} owner: ${owners}`);
+    }
+  }
+};
+
 const main = async () => {
-  await nftCreateMint();
-  await consolidate();
+  //await nftCreateMint();
+  //await consolidate();
+  await getAllNfts();
+  await transaction();
 };
 
 main()
