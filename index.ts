@@ -1,4 +1,4 @@
-import { transaction } from "./transaction";
+import { transaction_buy } from "./transaction";
 import {
   initConnection,
   hexCodeToString,
@@ -130,7 +130,7 @@ const consolidate = async () => {
     const ownedNFTs = await api.query.nftModule.ownedNFTs(alice.address);
     const ownedNFTsArray = JSON.parse(JSON.stringify(ownedNFTs));
     for (let i = 0; i < ownedNFTsArray.length; ++i) {
-      const [collectionId, itemIndex, maxItems] = ownedNFTsArray[i];
+      const [collectionId, itemIndex, share] = ownedNFTsArray[i];
       const status = await getNftConsolidateStatus(collectionId, itemIndex);
       console.log(
         `nft ${i} info: ${collectionId}, ${itemIndex}, status: ${status}`
@@ -240,8 +240,8 @@ const getAllNfts = async () => {
 const main = async () => {
   //await nftCreateMint();
   //await consolidate();
-  await getAllNfts();
-  //await transaction();
+  //await getAllNfts();
+  await transaction_buy();
 };
 
 main()
