@@ -1,4 +1,4 @@
-import { transaction_buy } from "./transaction";
+import { transactionBuy, transactionSwap } from "./transaction";
 import {
   initConnection,
   hexCodeToString,
@@ -241,7 +241,8 @@ const main = async () => {
   //await nftCreateMint();
   //await consolidate();
   //await getAllNfts();
-  await transaction_buy();
+  //await transactionBuy();
+  await transactionSwap();
 };
 
 main()
