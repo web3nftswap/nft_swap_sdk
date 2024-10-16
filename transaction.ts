@@ -108,6 +108,28 @@ const getNftOffers = async (offersForAccount, nft) => {
   return offers[0].offers;
 };
 
+const getAllLists = async (api) => {
+  const entries = await api.query.nftMarketModule.listings.entries();
+  const listings = entries.map(([key, value]) => ({
+    nft: JSON.parse(JSON.stringify(key.args[0])),
+    seller: JSON.parse(JSON.stringify(key.args[1])),
+    price: JSON.parse(JSON.stringify(value)).price,
+  }));
+  return listings;
+};
+
+const getAccountLists = async (api, accountAddress) => {
+  const entries = await api.query.nftMarketModule.listings.entries();
+  const listings = entries
+    .filter(([key]) => key.args[1].eq(accountAddress))
+    .map(([key, value]) => ({
+      nft: JSON.parse(JSON.stringify(key.args[0])),
+      seller: JSON.parse(JSON.stringify(key.args[1])),
+      price: JSON.parse(JSON.stringify(value)).price,
+    }));
+  return listings;
+};
+
 export const transactionSwap = async () => {
   const api = await initConnection();
 
@@ -180,6 +202,11 @@ export const transactionSwap = async () => {
   } catch (error) {
     console.log(`list error: ${error}`);
   }
+
+  console.log("[Query] listings");
+  //const lists = await getAllLists(api);
+  const lists = await getAccountLists(api, alice.address);
+  console.log(lists);
 
   // offer （bob使用自己的1个NFT+一些token来交换alice的NFT）
   // 先获取到bob的用来交换的NFT
