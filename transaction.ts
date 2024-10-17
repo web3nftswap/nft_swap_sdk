@@ -42,7 +42,7 @@ export const transactionBuy = async () => {
   const ownedNFTsArray = JSON.parse(JSON.stringify(ownedNFTs));
   const [collectionId, itemIndex, share] = ownedNFTsArray[0];
 
-  // list NFT
+  // 上架 list NFT
   console.log("[Call] listNft");
   const price = 100;
   tx = api.tx.nftMarketModule.listNft([collectionId, itemIndex, share], price);
@@ -181,12 +181,13 @@ export const transactionSwap = async () => {
     console.log(`list error: ${error}`);
   }
 
-  // offer （bob使用自己的1个NFT+一些token来交换alice的NFT）
+  // 发送 offer （bob使用自己的1个NFT+一些token来交换alice的NFT）
   // 先获取到bob的用来交换的NFT
   console.log("[Query] bob ownedNFTs");
   const bobOwnedNFTs = await api.query.nftModule.ownedNFTs(bob.address);
   const bobOwnedNFTsArray = JSON.parse(JSON.stringify(bobOwnedNFTs));
   const [swapCollectionId, swapItemIndex, swapShare] = bobOwnedNFTsArray[0];
+  
   const swapToken = 10;
   console.log("[Call] placeOffer");
   tx = api.tx.nftMarketModule.placeOffer(
@@ -202,7 +203,7 @@ export const transactionSwap = async () => {
     console.log(`offer error: ${error}`);
   }
 
-  // accept
+  //接受pffer accept
   // alice先获取收到的offer
   console.log("[Query] alice offers");
   // alice收到的所有offer
