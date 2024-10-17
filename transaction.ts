@@ -42,7 +42,7 @@ export const transactionBuy = async () => {
   const ownedNFTsArray = JSON.parse(JSON.stringify(ownedNFTs));
   const [collectionId, itemIndex, share] = ownedNFTsArray[0];
 
-  // 上架 list NFT
+  // 上架 NFT
   console.log("[Call] listNft");
   const price = 100;
   tx = api.tx.nftMarketModule.listNft([collectionId, itemIndex, share], price);
@@ -106,6 +106,29 @@ const getNftOffers = async (offersForAccount, nft) => {
       item.nft[0] === nft[0] && item.nft[1] === nft[1] && item.nft[2] === nft[2]
   );
   return offers[0].offers;
+};
+
+// 可买的 list
+const getAllLists = async (api) => {
+  const entries = await api.query.nftMarketModule.listings.entries();
+  const listings = entries.map(([key, value]) => ({
+    nft: JSON.parse(JSON.stringify(key.args[0])),
+    seller: JSON.parse(JSON.stringify(key.args[1])),
+    price: JSON.parse(JSON.stringify(value)).price,
+  }));
+  return listings;
+};
+// 当前账号的 list
+const getAccountLists = async (api, accountAddress) => {
+  const entries = await api.query.nftMarketModule.listings.entries();
+  const listings = entries
+    .filter(([key]) => key.args[1].eq(accountAddress))
+    .map(([key, value]) => ({
+      nft: JSON.parse(JSON.stringify(key.args[0])),
+      seller: JSON.parse(JSON.stringify(key.args[1])),
+      price: JSON.parse(JSON.stringify(value)).price,
+    }));
+  return listings;
 };
 
 export const transactionSwap = async () => {
@@ -181,7 +204,12 @@ export const transactionSwap = async () => {
     console.log(`list error: ${error}`);
   }
 
-  // 发送 offer （bob使用自己的1个NFT+一些token来交换alice的NFT）
+  console.log("[Query] listings");
+  //const lists = await getAllLists(api);
+  const lists = await getAccountLists(api, alice.address);
+  console.log(lists);
+
+  // offer （bob使用自己的1个NFT+一些token来交换alice的NFT）
   // 先获取到bob的用来交换的NFT
   console.log("[Query] bob ownedNFTs");
   const bobOwnedNFTs = await api.query.nftModule.ownedNFTs(bob.address);
