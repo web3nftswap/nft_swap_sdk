@@ -231,7 +231,7 @@ export const transactionSwap = async () => {
     console.log(`offer error: ${error}`);
   }
 
-  //接受pffer accept
+  //接受offer accept
   // alice先获取收到的offer
   console.log("[Query] alice offers");
   // alice收到的所有offer
