@@ -100,6 +100,22 @@ const getAccountAllOffers = async (api, accountAddress) => {
   return offersForAccount;
 };
 
+const getAccountAllSentOffers = async (api, accountAddress) => {
+  const entries = await api.query.nftMarketModule.offers.entries();
+  const offersForAlice: any = [];
+
+  for (const [storageKeys, boundedVecOffers] of entries) {
+    const offers = boundedVecOffers.toHuman();
+    for (const offer of offers) {
+      if (offer.buyer === accountAddress) {
+        offersForAlice.push(offer);
+      }
+    }
+  }
+
+  return offersForAlice;
+};
+
 const getNftOffers = async (offersForAccount, nft) => {
   const offers = offersForAccount.filter(
     (item) =>
@@ -149,6 +165,14 @@ export const transactionSwap = async () => {
         const [[collectionId, itemIndex, share], buyer, offer] = event.data;
         console.log(
           `[Event] offer nft ${buyer} ${collectionId} ${itemIndex} ${share} ${offer}`
+        );
+      } else if (
+        event.section === "nftMarketModule" &&
+        event.method === "OfferCanceled"
+      ) {
+        const [[collectionId, itemIndex, share], buyer, offer] = event.data;
+        console.log(
+          `[Event] cancel offer nft ${buyer} ${collectionId} ${itemIndex} ${share} ${offer}`
         );
       } else if (
         event.section === "nftMarketModule" &&
@@ -215,7 +239,7 @@ export const transactionSwap = async () => {
   const bobOwnedNFTs = await api.query.nftModule.ownedNFTs(bob.address);
   const bobOwnedNFTsArray = JSON.parse(JSON.stringify(bobOwnedNFTs));
   const [swapCollectionId, swapItemIndex, swapShare] = bobOwnedNFTsArray[0];
-  
+
   const swapToken = 10;
   console.log("[Call] placeOffer");
   tx = api.tx.nftMarketModule.placeOffer(
@@ -230,6 +254,26 @@ export const transactionSwap = async () => {
   } catch (error) {
     console.log(`offer error: ${error}`);
   }
+
+  //// 取消offer
+  //console.log("[Call] cancelOffer");
+  //tx = api.tx.nftMarketModule.cancelOffer(
+  //  [collectionId, itemIndex, share], // 目标NFT
+  //  [[swapCollectionId, swapItemIndex, swapShare]], // 用于报价的NFT数组
+  //  swapToken, // 用于报价的token
+  //  alice.address // 卖家
+  //);
+  //try {
+  //  hash = await sendAndWait(api, tx, bob);
+  //  console.log(`offer hash: ${hash.toHex()}`);
+  //} catch (error) {
+  //  console.log(`offer error: ${error}`);
+  //}
+
+  // 获取bob已发送的所有offer
+  console.log("[Query] all sent offers");
+  const allSentOffers = await getAccountAllSentOffers(api, bob.address);
+  console.log(allSentOffers);
 
   //接受offer accept
   // alice先获取收到的offer
@@ -252,5 +296,124 @@ export const transactionSwap = async () => {
     console.log(`accept hash: ${hash.toHex()}`);
   } catch (error) {
     console.log(`accept error: ${error}`);
+  }
+};
+
+export const transactionReject = async () => {
+  const api = await initConnection();
+
+  // subscribe event
+  await api.query.system.events((events) => {
+    events.forEach(({ event }) => {
+      if (event.section === "nftMarketModule" && event.method === "NftListed") {
+        const [sender, [collectionId, itemIndex, share]] = event.data;
+        console.log(
+          `[Event] list nft ${sender} ${collectionId} ${itemIndex} ${share}`
+        );
+      } else if (
+        event.section === "nftMarketModule" &&
+        event.method === "OfferPlaced"
+      ) {
+        const [[collectionId, itemIndex, share], buyer, offer] = event.data;
+        console.log(
+          `[Event] offer nft ${buyer} ${collectionId} ${itemIndex} ${share} ${offer}`
+        );
+      } else if (
+        event.section === "nftMarketModule" &&
+        event.method === "OfferRejected"
+      ) {
+        const [seller, [collectionId, itemIndex, share], buyer, offer] =
+          event.data;
+        console.log(
+          `[Event] reject nft ${seller} ${buyer} ${collectionId} ${itemIndex} ${share} ${offer}`
+        );
+      } else if (
+        event.section === "system" &&
+        event.method === "ExtrinsicFailed"
+      ) {
+        console.log(`[Event] failed, ${event.data}`);
+      }
+    });
+  });
+
+  let tx;
+  let hash;
+
+  const [alice, bob] = getAccounts(api);
+
+  //// bob先mint一个NFT用于交换
+  //const collectionIds = await api.query.nftModule.nftCollectionIds();
+  //const collectionIdsArray = JSON.parse(JSON.stringify(collectionIds));
+  //console.log("[Call] bob mintNft");
+  //tx = api.tx.nftModule.mintNft(
+  //  collectionIdsArray[collectionIdsArray.length - 1],
+  //  0x0
+  //);
+  //try {
+  //  hash = await sendAndWait(api, tx, bob);
+  //  console.log(`mint hash: ${hash.toHex()}`);
+  //} catch (error) {
+  //  console.log(`mint error: ${error}`);
+  //}
+
+  console.log("[Query] ownedNFTs");
+  const ownedNFTs = await api.query.nftModule.ownedNFTs(alice.address);
+  const ownedNFTsArray = JSON.parse(JSON.stringify(ownedNFTs));
+  const [collectionId, itemIndex, share] = ownedNFTsArray[0];
+
+  // list NFT
+  console.log("[Call] listNft");
+  const price = 100;
+  tx = api.tx.nftMarketModule.listNft([collectionId, itemIndex, share], price);
+  try {
+    hash = await sendAndWait(api, tx, alice);
+    console.log(`list hash: ${hash.toHex()}`);
+  } catch (error) {
+    console.log(`list error: ${error}`);
+  }
+
+  // offer （bob使用自己的1个NFT+一些token来交换alice的NFT）
+  // 先获取到bob的用来交换的NFT
+  console.log("[Query] bob ownedNFTs");
+  const bobOwnedNFTs = await api.query.nftModule.ownedNFTs(bob.address);
+  const bobOwnedNFTsArray = JSON.parse(JSON.stringify(bobOwnedNFTs));
+  const [swapCollectionId, swapItemIndex, swapShare] = bobOwnedNFTsArray[0];
+
+  const swapToken = 10;
+  console.log("[Call] placeOffer");
+  tx = api.tx.nftMarketModule.placeOffer(
+    [collectionId, itemIndex, share], // 目标NFT
+    [[swapCollectionId, swapItemIndex, swapShare]], // 用于报价的NFT数组
+    swapToken, // 用于报价的token
+    alice.address // 卖家
+  );
+  try {
+    hash = await sendAndWait(api, tx, bob);
+    console.log(`offer hash: ${hash.toHex()}`);
+  } catch (error) {
+    console.log(`offer error: ${error}`);
+  }
+
+  //拒绝offer
+  // alice先获取收到的offer
+  console.log("[Query] alice offers");
+  // alice收到的所有offer
+  const offersForAccount = await getAccountAllOffers(api, alice.address);
+  // alice收到的一个nft的offer
+  const offers = await getNftOffers(offersForAccount, ownedNFTsArray[0]);
+
+  // 拒绝第0个offer
+  console.log("[Call] rejectOffer");
+  tx = api.tx.nftMarketModule.rejectOffer(
+    ownedNFTsArray[0], // 目标NFT
+    offers[0].offeredNfts, // 用于报价的NFT数组
+    offers[0].tokenAmount, // 用于报价的token
+    offers[0].buyer // 买家
+  );
+  try {
+    hash = await sendAndWait(api, tx, alice);
+    console.log(`reject hash: ${hash.toHex()}`);
+  } catch (error) {
+    console.log(`reject error: ${error}`);
   }
 };
