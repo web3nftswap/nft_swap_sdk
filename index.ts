@@ -3,6 +3,7 @@ import {
   transactionSwap,
   transactionReject,
 } from "./transaction";
+import { getBalance } from "./balance";
 import {
   initConnection,
   hexCodeToString,
@@ -246,8 +247,10 @@ const main = async () => {
   //await consolidate();
   //await getAllNfts();
   //await transactionBuy();
-  await transactionSwap();
+  //await transactionSwap();
   //await transactionReject();
+
+  await getBalance();
 };
 
 main()

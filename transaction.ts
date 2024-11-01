@@ -108,7 +108,13 @@ const getAccountAllSentOffers = async (api, accountAddress) => {
     const offers = boundedVecOffers.toHuman();
     for (const offer of offers) {
       if (offer.buyer === accountAddress) {
-        offersForAlice.push(offer);
+        let offerInfo = {
+          nft: JSON.parse(JSON.stringify(storageKeys.args[0])),
+          offeredNfts: offer.offeredNfts,
+          tokenAmount: offer.tokenAmount,
+          seller: JSON.parse(JSON.stringify(storageKeys.args[1])),
+        };
+        offersForAlice.push(offerInfo);
       }
     }
   }
